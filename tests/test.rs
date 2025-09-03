@@ -1,38 +1,28 @@
-use hex;
-use mx_bls_rs::*;
-use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::mem;
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    mem,
+};
 
-fn secretkey_deserialize_hex_str(x: &str) -> SecretKey {
+use mx_bls_rs::*;
+
+fn secret_key_deserialize_hex_str(x: &str) -> SecretKey {
     SecretKey::from_serialized(&hex::decode(x).unwrap()).unwrap()
 }
 
-#[allow(dead_code)]
-fn secretkey_serialize_to_hex_str(x: &SecretKey) -> String {
-    hex::encode(x.serialize())
+fn public_key_deserialize_hex_str(x: &str) -> G2 {
+    G2::from_serialized(&hex::decode(x).unwrap()).unwrap()
 }
 
-fn publickey_deserialize_hex_str(x: &str) -> PublicKey {
-    PublicKey::from_serialized(&hex::decode(x).unwrap()).unwrap()
+fn signature_deserialize_hex_str(x: &str) -> G1 {
+    G1::from_serialized(&hex::decode(x).unwrap()).unwrap()
 }
 
-#[allow(dead_code)]
-fn publickey_serialize_to_hex_str(x: &PublicKey) -> String {
-    hex::encode(x.serialize())
-}
-
-fn signature_deserialize_hex_str(x: &str) -> Signature {
-    Signature::from_serialized(&hex::decode(x).unwrap()).unwrap()
-}
-
-fn signature_serialize_to_hex_str(x: &Signature) -> String {
-    hex::encode(x.serialize())
+fn signature_serialize_to_hex_str(x: &G1) -> String {
+    hex::encode(x.serialize().unwrap_or_else(|err| panic!("Error: {}", err)))
 }
 
 #[test]
-#[ignore]
 fn test_are_all_msg_different() {
     assert!(are_all_msg_different("abcdefgh".as_bytes(), 2));
     assert!(!are_all_msg_different("abcdabgh".as_bytes(), 2));
@@ -40,8 +30,10 @@ fn test_are_all_msg_different() {
 
 macro_rules! serialize_test {
     ($t:ty, $x:expr) => {
-        let buf = $x.serialize();
-        let mut y: $t = unsafe { <$t>::uninit() };
+        let buf = $x
+            .serialize()
+            .unwrap_or_else(|err| panic!("Error: {}", err));
+        let mut y: $t = <$t>::default();
         assert!(y.deserialize(&buf));
         assert_eq!($x, y);
 
@@ -51,236 +43,116 @@ macro_rules! serialize_test {
 }
 
 #[test]
-#[ignore]
 fn test_sign_serialize() {
     assert_eq!(mem::size_of::<SecretKey>(), 32);
-    assert_eq!(mem::size_of::<PublicKey>(), 48 * 3);
-    assert_eq!(mem::size_of::<Signature>(), 48 * 2 * 3);
+    assert_eq!(mem::size_of::<G1>(), 48 * 3);
+    assert_eq!(mem::size_of::<G2>(), 48 * 2 * 3);
 
     let msg = "abc".as_bytes();
-    let mut seckey = unsafe { SecretKey::uninit() };
-    seckey.set_by_csprng();
-    let pubkey = seckey.get_publickey();
-    let sig = seckey.sign(&msg);
-    assert!(sig.verify(&pubkey, &msg));
+    let mut sk = SecretKey::default();
+    sk.set_by_csprng();
+    let pk = sk.get_public_key();
+    let sig = sk.sign(msg);
 
-    serialize_test! {SecretKey, seckey};
-    serialize_test! {PublicKey, pubkey};
-    serialize_test! {Signature, sig};
+    assert!(sig.verify(pk, msg));
+    serialize_test! {SecretKey, sk};
+    serialize_test! {G2, pk};
+    serialize_test! {G1, sig};
 }
 
 #[test]
-#[ignore]
-fn test_from_serialized_signature() {
-    let data = [0u8; 0];
-    let _sig = Signature::from_serialized(&data);
-}
-
-#[test]
-#[ignore]
-fn test_from_serialized_publickey() {
-    let data = [0u8; 0];
-    let _pk = PublicKey::from_serialized(&data);
-}
-
-#[test]
-#[ignore]
-fn test_eth_aggregate() {
+fn test_aggregate() {
     let f = File::open("tests/aggregate.txt").unwrap();
     let file = BufReader::new(&f);
-    let mut sigs: Vec<Signature> = Vec::new();
+    let mut sigs: Vec<G1> = Vec::new();
 
-    for (_, s) in file.lines().enumerate() {
-        let line = s.unwrap();
-        let v: Vec<&str> = line.split(' ').collect();
-        match v[0] {
-            "sig" => sigs.push(signature_deserialize_hex_str(&v[1])),
+    for l in file.lines() {
+        let line = l.unwrap();
+        let elements: Vec<&str> = line.split_whitespace().collect();
+        match elements[0] {
+            "sig" => sigs.push(signature_deserialize_hex_str(elements[1])),
             "out" => {
-                let out = signature_deserialize_hex_str(&v[1]);
-                let mut agg = unsafe { Signature::uninit() };
+                let out = signature_deserialize_hex_str(elements[1]);
+                let mut agg = G1::default();
                 agg.aggregate(&sigs);
                 sigs.clear();
                 assert_eq!(agg, out);
             }
-            _ => assert!(false),
+            _ => (),
         }
     }
 }
 
-fn one_test_eth_sign(sec_hex: &str, msg_hex: &str, sig_hex: &str) {
-    let seckey = secretkey_deserialize_hex_str(&sec_hex);
-    let pubkey = seckey.get_publickey();
-    let msg = hex::decode(&msg_hex).unwrap();
-    let sig = seckey.sign(&msg);
-    assert!(sig.verify(&pubkey, &msg));
+fn one_test_sign(sk_hex: &str, msg: &str, sig_hex: &str) {
+    let sk = secret_key_deserialize_hex_str(sk_hex);
+    let pk = sk.get_public_key();
+    let msg = msg.as_bytes();
+    let sig = sk.sign(msg);
+
+    assert!(sig.verify(pk, msg));
     assert_eq!(signature_serialize_to_hex_str(&sig), sig_hex);
 }
 
 #[test]
-#[ignore]
-fn test_eth_sign() {
+fn test_sign() {
     let f = File::open("tests/sign.txt").unwrap();
     let file = BufReader::new(&f);
-    let mut sec_hex = "".to_string();
-    let mut msg_hex = "".to_string();
-    let mut sig_hex;
-    for (_, s) in file.lines().enumerate() {
+    let mut sk_hex = String::new();
+    let mut msg = String::new();
+
+    for s in file.lines() {
         let line = s.unwrap();
         let v: Vec<&str> = line.split(' ').collect();
         match v[0] {
-            "sec" => sec_hex = v[1].to_string(),
-            "msg" => msg_hex = v[1].to_string(),
+            "sec" => sk_hex = v[1].to_string(),
+            "msg" => msg = v[1].to_string(),
             "out" => {
-                sig_hex = v[1].to_string();
-                one_test_eth_sign(&sec_hex, &msg_hex, &sig_hex);
+                let sig_hex = v[1].to_string();
+                one_test_sign(&sk_hex, &msg, &sig_hex);
             }
-            _ => assert!(false),
+            _ => (),
         }
     }
 }
 
 #[test]
-#[ignore]
-fn test_eth_aggregate_verify_no_check1() {
-    let f = File::open("tests/aggregate_verify.txt").unwrap();
-    let file = BufReader::new(&f);
-    let mut pubs: Vec<PublicKey> = Vec::new();
-    let mut msg: Vec<u8> = Vec::new();
-    let mut sig = unsafe { Signature::uninit() };
-    let mut valid = false;
-
-    let mut i = 0;
-    for (_, s) in file.lines().enumerate() {
-        let line = s.unwrap();
-        let v: Vec<&str> = line.split(' ').collect();
-        match v[0] {
-            "pub" => pubs.push(publickey_deserialize_hex_str(&v[1])),
-            "msg" => {
-                let vv = hex::decode(&v[1]).unwrap();
-                msg.append(&mut vv.clone());
-            }
-            "sig" => {
-                valid = sig.deserialize(&hex::decode(&v[1]).unwrap());
-                if !valid {
-                    println!("bad signature {:?}", &v[1]);
-                }
-            }
-            "out" => {
-                println!("i={:?}", i);
-                if valid {
-                    let out = v[1] == "true";
-                    assert_eq!(sig.aggregate_verify_no_check(&pubs, &msg), out);
-                }
-                pubs.truncate(0);
-                msg.truncate(0);
-                i += 1;
-            }
-            _ => assert!(false),
-        }
-    }
-}
-
-#[test]
-#[ignore]
 fn test_fast_aggregate_verify() {
     let f = File::open("tests/fast_aggregate_verify.txt").unwrap();
     let file = BufReader::new(&f);
-    let mut pubs: Vec<PublicKey> = Vec::new();
-    let mut sig = unsafe { Signature::uninit() };
-    let mut msg: Vec<u8> = Vec::new();
-    let mut valid = false;
 
-    let mut i = 0;
-    for (_, s) in file.lines().enumerate() {
-        let line = s.unwrap();
-        let v: Vec<&str> = line.split(' ').collect();
-        match v[0] {
-            "pub" => pubs.push(publickey_deserialize_hex_str(&v[1])),
+    let mut pubs: Vec<G2> = Vec::new();
+    let mut sig = G1::default();
+    let mut msg: Vec<u8> = Vec::new();
+
+    for l in file.lines() {
+        let line = l.unwrap();
+        let elements: Vec<&str> = line.split_whitespace().collect();
+        match elements[0] {
+            "pub" => pubs.push(public_key_deserialize_hex_str(elements[1])),
             "msg" => {
-                let vv = &hex::decode(&v[1]).unwrap();
-                msg = vv.clone();
+                msg = elements[1].into();
             }
             "sig" => {
-                valid = sig.deserialize(&hex::decode(&v[1]).unwrap());
-                if !valid {
-                    println!("bad signature {:?}", &v[1]);
+                let err = sig.deserialize(&hex::decode(elements[1]).unwrap());
+                if !err {
+                    continue;
                 }
             }
             "out" => {
-                println!("i={:?}", i);
-                if valid {
-                    let out = v[1] == "true";
-                    assert_eq!(sig.fast_aggregate_verify(&pubs, &msg), out);
-                }
-                pubs.truncate(0);
-                i += 1;
+                let out = elements[1] == "true";
+                assert_eq!(sig.fast_aggregate_verify(&pubs, &msg), out);
+                pubs.clear();
             }
-            _ => assert!(false),
+            _ => (),
         }
     }
 }
 
-fn make_multi_sig(n: usize, msg_size: usize) -> (Vec<PublicKey>, Vec<Signature>, Vec<u8>) {
-    let mut pubs: Vec<PublicKey> = Vec::new();
-    let mut sigs: Vec<Signature> = Vec::new();
-    let mut msgs: Vec<u8> = Vec::new();
-    msgs.resize_with(n * msg_size, Default::default);
-    for i in 0..n {
-        let mut sec: SecretKey = unsafe { SecretKey::uninit() };
-        sec.set_by_csprng();
-        pubs.push(sec.get_publickey());
-        msgs[msg_size * i] = i as u8;
-        let sig = sec.sign(&msgs[i * msg_size..(i + 1) * msg_size]);
-        sigs.push(sig);
-    }
-    (pubs, sigs, msgs)
-}
-
-fn one_test_eth_aggregate_verify_no_check(n: usize) {
-    const MSG_SIZE: usize = 32;
-    let (pubs, sigs, mut msgs) = make_multi_sig(n, MSG_SIZE);
-    assert!(are_all_msg_different(&msgs, MSG_SIZE));
-    let mut agg_sig = unsafe { Signature::uninit() };
-    agg_sig.aggregate(&sigs);
-    if n == 0 {
-        assert!(!agg_sig.aggregate_verify_no_check(&pubs, &msgs));
-    } else {
-        assert!(agg_sig.aggregate_verify_no_check(&pubs, &msgs));
-        msgs[1] = 1;
-        assert!(!agg_sig.aggregate_verify_no_check(&pubs, &msgs));
-    }
-}
-
 #[test]
-#[ignore]
-fn test_eth_aggregate_verify_no_check2() {
-    let tbl = [0, 1, 2, 15, 16, 17, 50];
-    for i in 0..tbl.len() {
-        one_test_eth_aggregate_verify_no_check(tbl[i]);
-    }
-}
+fn test_signature_with_dummy_key() {
+    let sk = SecretKey::from_hex_str("1").unwrap();
+    let sig = sk.sign("asdf".as_bytes());
 
-#[test]
-#[ignore]
-fn test_eth_draft07() {
-    let seckey = SecretKey::from_hex_str("1").unwrap();
-    let sig = seckey.sign("asdf".as_bytes());
-    let sig_hex = "b45a264e0d6f8614c4640ea97bae13effd3c74c4e200e3b1596d6830debc952602a7d210eca122dc4f596fa01d7f6299106933abd29477606f64588595e18349afe22ecf2aeeeb63753e88a42ef85b24140847e05620a28422f8c30f1d33b9aa";
+    let sig_hex = "283ae6bd67b23ee056888f2b119beac4224b6bece92553913a03a8fec53b68c37fae3d9315b58468d2cdae05bf236298";
     assert_eq!(signature_serialize_to_hex_str(&sig), sig_hex);
-}
-
-fn test_multi_verify_one(n: usize) {
-    const MSG_SIZE: usize = 32;
-    let (pubs, sigs, mut msgs) = make_multi_sig(n, MSG_SIZE);
-    assert!(multi_verify(&sigs, &pubs, &msgs));
-    msgs[1] = 1;
-    assert!(!multi_verify(&sigs, &pubs, &msgs));
-}
-
-#[test]
-#[ignore]
-fn test_multi_verify() {
-    for n in [1, 2, 3, 15, 40, 400].iter() {
-        test_multi_verify_one(*n);
-    }
 }
