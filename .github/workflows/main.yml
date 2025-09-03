@@ -1,13 +1,36 @@
-name: test
-on: [push]
+name: CI
 
+on:
+  push:
+  pull_request:
+    
 jobs:
-  build:
-    name: test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-#    - run: sudo apt install wget
-    - run: wget https://github.com/herumi/bls-eth-go-binary/raw/master/bls/lib/linux/amd64/libbls384_256.a
-    - run: env RUSTFLAGS="-L./" cargo test --verbose
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Run cargo test
+        run: cargo test --verbose
+
+      - name: Run cargo bench
+        run: cargo bench --verbose
+
+      - name: Run cargo clippy (default)
+        run: cargo clippy -- -D warnings
+
+      - name: Run cargo clippy (tests)
+        run: cargo clippy --tests -- -D warnings
+
+      - name: Run cargo clippy (bench)
+        run: cargo clippy --bench -- -D warnings
