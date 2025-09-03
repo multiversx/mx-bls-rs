@@ -1,6 +1,6 @@
 
 [package]
-name = "bls_eth_rust-fuzz"
+name = "mx-bls-rs-fuzz"
 version = "0.0.0"
 authors = ["Automatically generated"]
 publish = false
@@ -9,7 +9,7 @@ edition = "2018"
 [package.metadata]
 cargo-fuzz = true
 
-[dependencies.bls_eth_rust]
+[dependencies.mx-bls-rs]
 path = ".."
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
