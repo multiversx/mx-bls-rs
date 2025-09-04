@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::constants::MCLBN_FP_UNIT_SIZE;
 use crate::g2::G2;
 use crate::init::{init_library, INIT};
@@ -139,23 +137,4 @@ impl G1 {
 
         Ok(buf)
     }
-}
-
-/// return true if `size`-byte splitted `msgs` are different each other
-/// * `msgs` - an array that `size`-byte messages are concatenated
-/// * `size` - length of one message
-pub fn are_all_msg_different(msgs: &[u8], size: usize) -> bool {
-    let n = msgs.len() / size;
-    assert!(msgs.len() == n * size);
-
-    let mut set = HashSet::new();
-    for i in 0..n {
-        let msg = &msgs[i * size..(i + 1) * size];
-        if set.contains(msg) {
-            return false;
-        }
-        set.insert(msg);
-    }
-
-    true
 }
