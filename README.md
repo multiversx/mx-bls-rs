@@ -35,7 +35,7 @@ G2|Public Key|
 
 - Checks if self is the point at infinity (zero element).
 
-`is_valid(&self) -> boo`l
+`is_valid(&self) -> bool`
 
 - Checks if self is a valid G1 element.
 
