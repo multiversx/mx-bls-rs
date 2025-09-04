@@ -1,15 +1,17 @@
 [package]
-name = "mx-bls-rs"
-version = "0.0.1"
+name = "multiversx-bls"
+version = "0.1.0"
+edition = "2021"
+
 authors = ["MultiversX <contact@multiversx.com>"]
-# license = "????"
+license = "GPL-3.0-only"
 readme = "README.md"
 repository = "https://github.com/multiversx/mx-bls-rs"
 homepage = "https://multiversx.com/"
 documentation = "https://docs.multiversx.com/"
 description = "BLS signature library for MultiversX"
 keywords = ["multiversx", "BLS", "blockchain"]
-edition = "2021"
+categories = ["cryptography"]
 
 [lib]
 path = "src/lib.rs"

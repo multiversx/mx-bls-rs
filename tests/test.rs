@@ -4,7 +4,7 @@ use std::{
     mem,
 };
 
-use mx_bls_rs::*;
+use multiversx_bls::*;
 
 fn secret_key_deserialize_hex_str(x: &str) -> SecretKey {
     SecretKey::from_serialized(&hex::decode(x).unwrap()).unwrap()
