@@ -158,7 +158,7 @@ fn test_signature_with_dummy_key() {
     assert_eq!(signature_serialize_to_hex_str(&sig), sig_hex);
 }
 
-/// return true if `size`-byte splitted `msgs` are different each other
+/// return true if `size`-byte split `msgs` are different each other
 /// * `msgs` - an array that `size`-byte messages are concatenated
 /// * `size` - length of one message
 fn are_all_msg_different(msgs: &[u8], size: usize) -> bool {
