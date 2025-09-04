@@ -174,7 +174,7 @@ let buffer = [0; 48];
 
 let mut sign = G1::default();
 
-if !sign.deserialize(signature) {
+if !sign.deserialize(buffer) {
     return Err(BlsError::InvalidData);
 }
 ```
