@@ -8,7 +8,7 @@ mod init;
 mod secret_key;
 
 pub use error::BlsError;
-pub use g1::{are_all_msg_different, G1};
+pub use g1::G1;
 pub use g2::G2;
 pub use gt::GT;
 pub use secret_key::SecretKey;

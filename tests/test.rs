@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader},
     mem,
@@ -155,4 +156,23 @@ fn test_signature_with_dummy_key() {
 
     let sig_hex = "283ae6bd67b23ee056888f2b119beac4224b6bece92553913a03a8fec53b68c37fae3d9315b58468d2cdae05bf236298";
     assert_eq!(signature_serialize_to_hex_str(&sig), sig_hex);
+}
+
+/// return true if `size`-byte split `msgs` are different each other
+/// * `msgs` - an array that `size`-byte messages are concatenated
+/// * `size` - length of one message
+fn are_all_msg_different(msgs: &[u8], size: usize) -> bool {
+    let n = msgs.len() / size;
+    assert!(msgs.len() == n * size);
+
+    let mut set = HashSet::new();
+    for i in 0..n {
+        let msg = &msgs[i * size..(i + 1) * size];
+        if set.contains(msg) {
+            return false;
+        }
+        set.insert(msg);
+    }
+
+    true
 }

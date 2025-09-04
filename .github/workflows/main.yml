@@ -39,5 +39,8 @@ jobs:
       - name: Run cargo clippy (tests)
         run: cargo clippy --tests -- -D warnings
 
-      - name: Run cargo clippy (bench)
-        run: cargo clippy --bench -- -D warnings
+      - name: Run cargo clippy (bench bls381_benches)
+        run: cargo clippy --bench bls381_benches -- -D warnings
+
+      - name: Run cargo clippy (bench multi_verify_benches)
+        run: cargo clippy --bench multi_verify_benches -- -D warnings
