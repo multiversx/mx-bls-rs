@@ -7,6 +7,7 @@ unsafe extern "C" {
     pub unsafe fn blsInit(curve: usize, compiledTimeVar: usize) -> i32;
 
     pub unsafe fn mclBnFr_isZero(secret_key: *const SecretKey) -> i32;
+    pub unsafe fn mclBnFr_isValid(secret_key: *const SecretKey) -> i32;
     pub unsafe fn mclBn_getFrByteSize() -> usize;
     pub unsafe fn mclBn_getFpByteSize() -> usize;
     pub unsafe fn mclBnG2_setStr(x: *mut G2, buf: *const u8, buf_size: usize, io_mode: i32) -> i32;
