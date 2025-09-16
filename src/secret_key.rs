@@ -100,4 +100,14 @@ impl SecretKey {
 
         Ok(buf)
     }
+
+    pub fn is_zero(&self) -> bool {
+        INIT.call_once(init_library);
+        unsafe { mclBnFr_isZero(self) == 1 }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        INIT.call_once(init_library);
+        unsafe { mclBnFr_isValid(self) == 1 }
+    }
 }
