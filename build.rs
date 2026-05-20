@@ -26,6 +26,7 @@ fn main() {
         ("x86_64", "windows") => {
             println!("cargo:rustc-link-search=native=./executors");
             println!("cargo:rustc-link-lib=static=bls384_256_amd_windows");
+            println!("cargo:rustc-link-lib=advapi32");
             let env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
             if env == "gnu" {
                 println!("cargo:rustc-link-lib=stdc++");
