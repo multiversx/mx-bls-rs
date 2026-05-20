@@ -15,7 +15,7 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -31,6 +31,7 @@ jobs:
         run: cargo test --verbose
 
       - name: Run cargo bench
+        if: matrix.os != 'windows-latest'
         run: cargo bench --verbose
 
       - name: Run cargo clippy (default)
@@ -40,7 +41,9 @@ jobs:
         run: cargo clippy --tests -- -D warnings
 
       - name: Run cargo clippy (bench bls381_benches)
+        if: matrix.os != 'windows-latest'
         run: cargo clippy --bench bls381_benches -- -D warnings
 
       - name: Run cargo clippy (bench multi_verify_benches)
+        if: matrix.os != 'windows-latest'
         run: cargo clippy --bench multi_verify_benches -- -D warnings
