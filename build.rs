@@ -26,7 +26,6 @@ fn main() {
         ("x86_64", "windows") => {
             println!("cargo:rustc-link-search=native=./executors");
             println!("cargo:rustc-link-lib=static=bls384_256_amd_windows");
-            println!("cargo:rustc-link-lib=stdc++");
         }
         _ => panic!("Unsupported target: {os}-{target}"),
     }
