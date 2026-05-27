@@ -30,17 +30,55 @@ jobs:
       - name: Run cargo test
         run: cargo test --verbose
 
-      - name: Run cargo bench
-        run: cargo bench --verbose
-
       - name: Run cargo clippy (default)
         run: cargo clippy -- -D warnings
 
       - name: Run cargo clippy (tests)
         run: cargo clippy --tests -- -D warnings
 
+  bench:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Run cargo bench
+        run: cargo bench --verbose
+
       - name: Run cargo clippy (bench bls381_benches)
         run: cargo clippy --bench bls381_benches -- -D warnings
 
       - name: Run cargo clippy (bench multi_verify_benches)
         run: cargo clippy --bench multi_verify_benches -- -D warnings
+
+  build-and-test-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: x86_64-pc-windows-gnu
+
+      - name: Add MinGW to PATH
+        shell: pwsh
+        run: echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Run cargo test
+        run: cargo test --target x86_64-pc-windows-gnu --verbose
+
+      - name: Run cargo clippy (tests)
+        run: cargo clippy --tests --target x86_64-pc-windows-gnu -- -D warnings
