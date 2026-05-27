@@ -1,7 +1,7 @@
 use crate::constants::MCLBN_FP_UNIT_SIZE;
 use crate::g2::G2;
-use crate::init::{init_library, INIT};
-use crate::{bls_api::*, BlsError};
+use crate::init::{INIT, init_library};
+use crate::{BlsError, bls_api::*};
 
 /// signature type
 #[derive(Default, Debug, Clone, Copy, Eq)]

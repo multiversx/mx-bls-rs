@@ -1,9 +1,9 @@
+use crate::BlsError;
 use crate::bls_api::*;
 use crate::constants::MCLBN_FR_UNIT_SIZE;
 use crate::g1::G1;
 use crate::g2::G2;
-use crate::init::{init_library, INIT};
-use crate::BlsError;
+use crate::init::{INIT, init_library};
 
 /// secret key type
 #[derive(Default, Debug, Clone, Copy, Eq)]

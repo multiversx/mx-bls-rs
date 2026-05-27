@@ -2,8 +2,8 @@ extern crate criterion;
 
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, Criterion};
-use multiversx_bls::{SecretKey, G1, G2};
+use criterion::{Criterion, criterion_group, criterion_main};
+use multiversx_bls::{G1, G2, SecretKey};
 
 const MSG_SIZE: usize = 32;
 

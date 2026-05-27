@@ -1,6 +1,6 @@
 use crate::constants::MCLBN_FP_UNIT_SIZE;
-use crate::init::{init_library, INIT};
-use crate::{bls_api::*, BlsError};
+use crate::init::{INIT, init_library};
+use crate::{BlsError, bls_api::*};
 
 /// public key type
 #[derive(Default, Debug, Clone, Copy, Eq)]
