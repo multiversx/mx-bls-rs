@@ -1,6 +1,6 @@
 use crate::bls_api::mclBnGT_isEqual;
 use crate::constants::MCLBN_FP_UNIT_SIZE;
-use crate::init::{init_library, INIT};
+use crate::init::{INIT, init_library};
 
 /// GT type
 #[derive(Default, Debug, Clone, Copy, Eq)]

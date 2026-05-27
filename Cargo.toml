@@ -1,7 +1,8 @@
 [package]
 name = "multiversx-bls"
 version = "0.2.0"
-edition = "2021"
+edition = "2024"
+rust-version = "1.85"
 
 authors = ["MultiversX <contact@multiversx.com>"]
 license = "GPL-3.0-only"
