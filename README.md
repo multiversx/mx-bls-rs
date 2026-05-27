@@ -162,7 +162,7 @@ let buffer = [0; 96];
 
 let mut public_key = G2::default();
 
-if !public_key.deserialize_g2(buffer) {
+if !public_key.deserialize_g2(&buffer) {
     return Err(BlsError::InvalidData);
 }
 ```
@@ -174,7 +174,7 @@ let buffer = [0; 48];
 
 let mut sign = G1::default();
 
-if !sign.deserialize(buffer) {
+if !sign.deserialize(&buffer) {
     return Err(BlsError::InvalidData);
 }
 ```
