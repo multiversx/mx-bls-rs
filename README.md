@@ -186,3 +186,9 @@ fn verify_signature(signature: G1, public_key: G2, message: &[u8]) {
     signature.verify(public_key, message)
 }
 ```
+
+## Acknowledgements
+
+This repository originated as a fork of [herumi/bls-eth-rust](https://github.com/herumi/bls-eth-rust) by MITSUNARI Shigeo, a Rust wrapper around the [herumi/bls](https://github.com/herumi/bls) C library. The original implementation provided the foundational FFI bindings and BLS primitives that this library builds upon.
+
+The codebase has since been substantially rewritten — Ethereum-specific logic was removed, the API was restructured into dedicated modules, and the library was tailored to MultiversX's requirements. The fork has been detached from the upstream repository to reflect this divergence.
