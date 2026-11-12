@@ -81,6 +81,7 @@ impl G2 {
     /// # Returns
     /// `true` if the `G2` element is the zero element, otherwise `false`.
     pub fn is_zero(&self) -> bool {
+        INIT.call_once(init_library);
         unsafe { mclBnG2_isZero(self) == 1 }
     }
 
@@ -92,12 +93,14 @@ impl G2 {
     /// # Returns
     /// `true` if the `G2` element is valid, otherwise `false`.
     pub fn is_valid(&self) -> bool {
+        INIT.call_once(init_library);
         unsafe { mclBnG2_isValid(self) == 1 }
     }
 
     /// verify the correctness whenever public key setter is used
     /// * `verify` - enable if true (default off)
     pub fn verify_public_key_order(verify: bool) {
+        INIT.call_once(init_library);
         unsafe { blsPublicKeyVerifyOrder(verify as i32) }
     }
 

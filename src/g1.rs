@@ -82,6 +82,7 @@ impl G1 {
     /// # Returns
     /// `true` if the `G1` element is the zero element, otherwise `false`.
     pub fn is_zero(&self) -> bool {
+        INIT.call_once(init_library);
         unsafe { mclBnG1_isZero(self) == 1 }
     }
 
@@ -93,12 +94,14 @@ impl G1 {
     /// # Returns
     /// `true` if the `G1` element is valid, otherwise `false`.
     pub fn is_valid(&self) -> bool {
+        INIT.call_once(init_library);
         unsafe { mclBnG1_isValid(self) == 1 }
     }
 
     /// verify the correctness whenever signature setter is used
     /// * `verify` - enable if true (default off)
     pub fn verify_signature_order(verify: bool) {
+        INIT.call_once(init_library);
         unsafe { blsSignatureVerifyOrder(verify as i32) }
     }
 
