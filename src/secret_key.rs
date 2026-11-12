@@ -56,8 +56,24 @@ impl SecretKey {
         v
     }
 
+    /// Signs `msg`, with the same checks as `BlsSingleSigner.Sign` in
+    /// mx-chain-crypto-go.
+    ///
+    /// Returns `BlsError::InvalidData` if `msg` is empty or the key is zero
+    /// or not a valid scalar.
+    pub fn sign_checked(&self, msg: &[u8]) -> Result<G1, BlsError> {
+        if msg.is_empty() || self.is_zero() || !self.is_valid() {
+            return Err(BlsError::InvalidData);
+        }
+
+        Ok(self.sign(msg))
+    }
+
     /// return the signature of `msg`
     /// * `msg` - message
+    ///
+    /// No input checks: a zero key returns the identity signature. Prefer
+    /// [`SecretKey::sign_checked`], which matches the node.
     pub fn sign(&self, msg: &[u8]) -> G1 {
         INIT.call_once(init_library);
         let mut v = G1::default();

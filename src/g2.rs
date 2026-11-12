@@ -20,6 +20,14 @@ impl PartialEq for G2 {
 }
 
 impl G2 {
+    /// Returns true if `self` is usable as a public key: not the identity,
+    /// in the prime-order subgroup, and on the curve.
+    ///
+    /// Same as `IsPubKeyPointValid` in mx-chain-crypto-go.
+    pub fn is_valid_point(&self) -> bool {
+        !self.is_zero() && self.is_valid_order() && self.is_valid()
+    }
+
     /// Adds the given `public_key` to `self`.
     ///
     /// This function performs an addition operation on the `G2` element represented by `self`
@@ -81,6 +89,7 @@ impl G2 {
     /// # Returns
     /// `true` if the `G2` element is the zero element, otherwise `false`.
     pub fn is_zero(&self) -> bool {
+        INIT.call_once(init_library);
         unsafe { mclBnG2_isZero(self) == 1 }
     }
 
@@ -92,12 +101,25 @@ impl G2 {
     /// # Returns
     /// `true` if the `G2` element is valid, otherwise `false`.
     pub fn is_valid(&self) -> bool {
+        INIT.call_once(init_library);
         unsafe { mclBnG2_isValid(self) == 1 }
     }
 
-    /// verify the correctness whenever public key setter is used
-    /// * `verify` - enable if true (default off)
-    pub fn verify_public_key_order(verify: bool) {
+    /// Enables or disables the subgroup (order) check that public key
+    /// deserialization performs. Enabled by default.
+    ///
+    /// The setting is process-wide: it changes how every `G2` is deserialized,
+    /// in every thread, including by other crates using this one. With the
+    /// check disabled, `deserialize`, `deserialize_g2` and `from_serialized`
+    /// accept points outside the prime-order subgroup; check them with
+    /// `is_valid_order`.
+    ///
+    /// # Safety
+    /// The setting is a global variable in the C library, written without
+    /// synchronisation. The caller must ensure no other thread is calling
+    /// into this crate while it runs.
+    pub unsafe fn verify_public_key_order(verify: bool) {
+        INIT.call_once(init_library);
         unsafe { blsPublicKeyVerifyOrder(verify as i32) }
     }
 

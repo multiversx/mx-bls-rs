@@ -9,15 +9,47 @@ multiversx-bls | Spec Name|
 G1|Signature|
 G2|Public Key|
 
+## Checked functions
+
+The `*_checked` functions and `is_valid_point` apply the same input checks as the MultiversX node ([mx-chain-crypto-go](https://github.com/multiversx/mx-chain-crypto-go) `BlsSingleSigner` and `BlsMultiSignerKOSK`). Prefer them over the raw functions, which pass inputs straight to the C library.
+
+| Rust | mx-chain-crypto-go | Rejects |
+|---|---|---|
+| `G1::is_valid_point`, `G2::is_valid_point` | `IsSigValidPoint`, `IsPubKeyPointValid` | identity, outside the prime-order subgroup, not on the curve |
+| `SecretKey::sign_checked` | `BlsSingleSigner.Sign` | empty message; zero or invalid key |
+| `G1::verify_checked` | `BlsSingleSigner.Verify` | empty message; public key or signature that is not a valid point |
+| `G1::aggregate_checked` | `BlsMultiSignerKOSK.AggregateSignatures` | no signatures; any signature that is not a valid point |
+| `G1::fast_aggregate_verify_checked` | `BlsMultiSignerKOSK.VerifyAggregatedSig` | empty message; no public keys |
+
+Like the node, `fast_aggregate_verify_checked` does not check the public keys themselves: under the KOSK scheme they must already be validated, registered keys.
+
 ## G1 - Signature
+
+`is_valid_point(&self) -> bool`
+
+- Checks that self is not the identity, is in the prime-order subgroup and is on the curve.
+
+`verify_checked(&self, public_key: &G2, msg: &[u8]) -> bool`
+
+- Checks if self is a valid signature of message for the given public key, with the node's input checks.
+
+`fast_aggregate_verify_checked(&self, public_keys: &[G2], msg: &[u8]) -> bool`
+
+- Checks if self is a valid aggregated signature of message for multiple public keys, with the node's input checks.
+
+`aggregate_checked(sigs: &[G1]) -> Result<G1, BlsError>`
+
+- Aggregates signatures, with the node's input checks:
+  - The aggregated signature if successful;
+  - Return `BlsError::InvalidData` if `sigs` is empty or any signature is not a valid point.
 
 `verify(&self, public_key: G2, msg: &[u8]) -> bool`
 
-- Checks if self is a valid signature of message for the given public key.
+- Checks if self is a valid signature of message for the given public key. No input checks.
 
 `fast_aggregate_verify(&self, public_keys: &[G2], msg: &[u8]) -> bool`
 
-- Checks if self is a valid aggregated signature of message for multiple public keys.
+- Checks if self is a valid aggregated signature of message for multiple public keys. No input checks.
 
 `add_assign(&mut self, signature: G1)`
 
@@ -39,11 +71,12 @@ G2|Public Key|
 
 - Checks if self is a valid G1 element.
 
-`verify_signature_order(verify: bool)`
+`unsafe fn verify_signature_order(verify: bool)`
 
-- Enables or disables signature order verification:
-  - `true`: verification enabled;
-  - `false`: verification disabled (default).
+- Enables or disables the subgroup (order) check during signature deserialization:
+  - `true`: check enabled (default);
+  - `false`: check disabled; deserialization accepts points outside the prime-order subgroup.
+- The setting is process-wide and not synchronised: it affects every thread, and no other thread may call into the crate while it runs.
 
 `deserialize(&mut self, buf: &[u8]) -> bool`
 
@@ -62,6 +95,10 @@ G2|Public Key|
   - Return `BlsError::SerializeError` on failure.
 
 ## G2 - Public Key
+
+`is_valid_point(&self) -> bool`
+
+- Checks that self is not the identity, is in the prime-order subgroup and is on the curve.
 
 `add_assign(&mut self, public_key: G2)`
 
@@ -87,11 +124,12 @@ G2|Public Key|
 
 - Checks if self is a valid G2 element.
 
-`verify_public_key_order(verify: bool)`
+`unsafe fn verify_public_key_order(verify: bool)`
 
-- Enables/disables verification of public key order when setting keys:
-  - true: verification enabled;
-  - false: verification disabled (default).
+- Enables or disables the subgroup (order) check during public key deserialization:
+  - `true`: check enabled (default);
+  - `false`: check disabled; deserialization accepts points outside the prime-order subgroup.
+- The setting is process-wide and not synchronised: it affects every thread, and no other thread may call into the crate while it runs.
 
 `serialize(&self) -> Result<Vec<u8>, BlsError>`
 
@@ -128,6 +166,12 @@ G2|Public Key|
 `get_public_key(&self) -> G2`
 
 - Derives the public key (G2) corresponding to this secret key.
+
+`sign_checked(&self, msg: &[u8]) -> Result<G1, BlsError>`
+
+- Generates a signature (G1) of the given message, with the node's input checks:
+  - The signature if successful;
+  - Return `BlsError::InvalidData` if the message is empty or the key is zero or invalid.
 
 `sign(&self, msg: &[u8]) -> G1`
 
@@ -182,8 +226,8 @@ if !sign.deserialize(&buffer) {
 Example: verifying a BLS signature with a single public key and message.
 
 ```rust
-fn verify_signature(signature: G1, public_key: G2, message: &[u8]) {
-    signature.verify(public_key, message)
+fn verify_signature(signature: &G1, public_key: &G2, message: &[u8]) -> bool {
+    signature.verify_checked(public_key, message)
 }
 ```
 

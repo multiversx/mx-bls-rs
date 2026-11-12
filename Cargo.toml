@@ -14,6 +14,10 @@ description = "BLS signature library for MultiversX"
 keywords = ["multiversx", "BLS", "blockchain"]
 categories = ["cryptography"]
 
+# The bundled static archives export the herumi bls/mcl C symbols. Declaring
+# them lets Cargo reject a build graph that would link them twice.
+links = "bls384_256"
+
 [lib]
 path = "src/lib.rs"
 
