@@ -29,7 +29,7 @@ Result: **176 checks, 0 mismatches.**
 | 1 | High | Fixed | Calls into the C library before initialisation segfault in safe Rust |
 | 2 | Medium | Fixed | `blsInit` failure is ignored |
 | 3 | Medium | Fixed | Order-verification toggles are global, unsynchronised and misdocumented |
-| 4 | Medium | Open | `build.rs` breaks when the crate is a workspace member in a subdirectory |
+| 4 | Medium | Fixed | `build.rs` breaks when the crate is a workspace member in a subdirectory |
 | 5 | Medium | Open | No checked sign/verify API matching Go |
 | 6 | Low | Open | `G2::set_str` ignores errors and leaves a corrupted point |
 | 7 | Low | Open | FFI declarations don't match the C header |
@@ -74,7 +74,7 @@ Related:
 - `("arm", "linux")` (32-bit) is mapped to the aarch64 archive; `("arm", "macos")` is not a real target.
 - No `cargo:rerun-if-changed` lines, so the build script reruns on any file change.
 
-Recommendation: build the path from `CARGO_MANIFEST_DIR`, add a `links` key, drop the 32-bit `arm` arms.
+Fix: the search path is built from `CARGO_MANIFEST_DIR`; `Cargo.toml` declares `links = "bls384_256"`; the 32-bit `arm` arms are removed; `rerun-if-changed` covers `build.rs` and `executors/`. Checked: the workspace-member layout now builds and passes its tests, an out-of-workspace path dependency still works, and a graph with two copies of the crate is rejected by Cargo.
 
 ### 5. No checked sign/verify API (Medium)
 
@@ -146,7 +146,7 @@ Only the KOSK aggregation scheme (active on mainnet) can be implemented with thi
 
 1. Initialise before every C call, and panic if `blsInit` fails (both done).
 2. Make the order toggles `unsafe` and fix the README default (done).
-3. Fix `build.rs` (`CARGO_MANIFEST_DIR`, `links`).
+3. Fix `build.rs` (`CARGO_MANIFEST_DIR`, `links`) (done).
 4. Add checked sign/verify matching Go.
 5. Correct FFI types, make `set_str` return `Result`, harden `SecretKey`.
 6. Commit the Go-generated vectors as tests and run them in CI; upgrade the archives to v1.37.0.
