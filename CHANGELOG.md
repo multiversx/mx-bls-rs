@@ -6,6 +6,7 @@ This file contains a centralizes a trace of all published crate versions, with t
 
 - Fixes a segfault when `G1`/`G2` `is_zero` or `is_valid` was the first call in a process: they now initialise the library first.
 - `verify_signature_order` and `verify_public_key_order` now initialise the library first, so a setting made before any other call is no longer silently reset.
+- Panics if the C library fails to initialise, instead of continuing on an uninitialised curve.
 
 
 ## [multiversx-bls 0.2.1] - 2026-05-27

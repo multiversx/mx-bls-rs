@@ -9,10 +9,25 @@ enum CurveType {
 
 // Used to call blsInit only once.
 pub static INIT: Once = Once::new();
+
+/// Initialises the C library for BLS12-381.
+///
+/// # Panics
+/// Panics if `blsInit` fails, which means the bundled static library does not
+/// match this crate. Continuing would run every later call on an uninitialised
+/// curve. The panic poisons `INIT`, so every later call panics as well.
 pub fn init_library() {
-    init(CurveType::BLS12_381);
+    if let Err(code) = init(CurveType::BLS12_381) {
+        panic!(
+            "BLS12-381 initialisation failed: blsInit returned {code}; \
+             the bundled static library does not match this crate"
+        );
+    }
 }
 
-fn init(curve_type: CurveType) -> bool {
-    unsafe { blsInit(curve_type as usize, MCLBN_COMPILED_TIME_VAR) == 0 }
+fn init(curve_type: CurveType) -> Result<(), i32> {
+    match unsafe { blsInit(curve_type as usize, MCLBN_COMPILED_TIME_VAR) } {
+        0 => Ok(()),
+        code => Err(code),
+    }
 }

@@ -27,7 +27,7 @@ Result: **176 checks, 0 mismatches.**
 | # | Severity | Status | Finding |
 |---|---|---|---|
 | 1 | High | Fixed | Calls into the C library before initialisation segfault in safe Rust |
-| 2 | Medium | Open | `blsInit` failure is ignored |
+| 2 | Medium | Fixed | `blsInit` failure is ignored |
 | 3 | Medium | Open | Order-verification toggles are global, unsynchronised and misdocumented |
 | 4 | Medium | Open | `build.rs` breaks when the crate is a workspace member in a subdirectory |
 | 5 | Medium | Open | No checked sign/verify API matching Go |
@@ -51,7 +51,7 @@ Fix: every one of these functions now initialises the library first; `tests/init
 
 `init()` returns `blsInit(...) == 0`, but `init_library` discards it ([src/init.rs](src/init.rs)). If initialisation fails (for example a compile-time constant mismatch with the static library), every later call runs against an uninitialised curve. Go panics in the same situation (`suiteBLS12_381.go`, `blsInit`).
 
-Recommendation: panic with a clear message when `blsInit` returns non-zero.
+Fix: `init_library` now panics with the `blsInit` return code when it is non-zero. The panic poisons the `Once`, so every later call panics too instead of running on an uninitialised curve. Checked by temporarily using a wrong compile-time constant: `blsInit returned -46047`.
 
 ### 3. Order-verification toggles (Medium)
 
@@ -144,7 +144,7 @@ Only the KOSK aggregation scheme (active on mainnet) can be implemented with thi
 
 ## Recommended order of work
 
-1. Initialise before every C call (done), and panic if `blsInit` fails.
+1. Initialise before every C call, and panic if `blsInit` fails (both done).
 2. Remove or make `unsafe` the order toggles; fix the README default.
 3. Fix `build.rs` (`CARGO_MANIFEST_DIR`, `links`).
 4. Add checked sign/verify matching Go.

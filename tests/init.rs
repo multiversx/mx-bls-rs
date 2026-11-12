@@ -73,5 +73,9 @@ fn init_cases() {
             ));
         }
     }
-    assert!(failures.is_empty(), "failed cases:\n{}", failures.join("\n"));
+    assert!(
+        failures.is_empty(),
+        "failed cases:\n{}",
+        failures.join("\n")
+    );
 }
