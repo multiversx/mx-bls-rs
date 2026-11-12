@@ -7,7 +7,7 @@
 
 use std::process::Command;
 
-use multiversx_bls::{G1, G2, SecretKey};
+use multiversx_bls::{BlsError, G1, G2, SecretKey};
 
 const CASE_VAR: &str = "MULTIVERSX_BLS_INIT_CASE";
 
@@ -23,17 +23,25 @@ fn run_case(case: &str) {
         // Disabling order verification before anything else must stick,
         // instead of being reset by the lazy initialisation that follows.
         "signature_order_toggle_first" => {
-            G1::verify_signature_order(false);
+            // SAFETY: the child process runs this single test on one thread.
+            unsafe { G1::verify_signature_order(false) };
             let sig = G1::from_serialized(&hex::decode(NON_SUBGROUP_G1).unwrap());
-            G1::verify_signature_order(true);
+            // SAFETY: as above.
+            unsafe { G1::verify_signature_order(true) };
             let sig = sig.expect("order check was disabled, deserialization must succeed");
             assert!(!sig.is_valid_order());
         }
         "public_key_order_toggle_first" => {
             // Only checks that the call itself is safe as the first call.
-            G2::verify_public_key_order(true);
+            // SAFETY: the child process runs this single test on one thread.
+            unsafe { G2::verify_public_key_order(true) };
             let pk = SecretKey::from_hex_str("2").unwrap().get_public_key();
             assert!(G2::from_serialized(&pk.serialize().unwrap()).is_ok());
+        }
+        // The documented default: a fresh process rejects non-subgroup points.
+        "order_check_on_by_default" => {
+            let sig = G1::from_serialized(&hex::decode(NON_SUBGROUP_G1).unwrap());
+            assert_eq!(sig, Err(BlsError::InvalidData));
         }
         other => panic!("unknown case {other}"),
     }
@@ -46,6 +54,7 @@ const CASES: &[&str] = &[
     "g2_is_valid",
     "signature_order_toggle_first",
     "public_key_order_toggle_first",
+    "order_check_on_by_default",
 ];
 
 #[test]

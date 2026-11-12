@@ -97,9 +97,20 @@ impl G2 {
         unsafe { mclBnG2_isValid(self) == 1 }
     }
 
-    /// verify the correctness whenever public key setter is used
-    /// * `verify` - enable if true (default off)
-    pub fn verify_public_key_order(verify: bool) {
+    /// Enables or disables the subgroup (order) check that public key
+    /// deserialization performs. Enabled by default.
+    ///
+    /// The setting is process-wide: it changes how every `G2` is deserialized,
+    /// in every thread, including by other crates using this one. With the
+    /// check disabled, `deserialize`, `deserialize_g2` and `from_serialized`
+    /// accept points outside the prime-order subgroup; check them with
+    /// `is_valid_order`.
+    ///
+    /// # Safety
+    /// The setting is a global variable in the C library, written without
+    /// synchronisation. The caller must ensure no other thread is calling
+    /// into this crate while it runs.
+    pub unsafe fn verify_public_key_order(verify: bool) {
         INIT.call_once(init_library);
         unsafe { blsPublicKeyVerifyOrder(verify as i32) }
     }

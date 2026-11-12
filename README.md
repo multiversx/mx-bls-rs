@@ -39,11 +39,12 @@ G2|Public Key|
 
 - Checks if self is a valid G1 element.
 
-`verify_signature_order(verify: bool)`
+`unsafe fn verify_signature_order(verify: bool)`
 
-- Enables or disables signature order verification:
-  - `true`: verification enabled;
-  - `false`: verification disabled (default).
+- Enables or disables the subgroup (order) check during signature deserialization:
+  - `true`: check enabled (default);
+  - `false`: check disabled; deserialization accepts points outside the prime-order subgroup.
+- The setting is process-wide and not synchronised: it affects every thread, and no other thread may call into the crate while it runs.
 
 `deserialize(&mut self, buf: &[u8]) -> bool`
 
@@ -87,11 +88,12 @@ G2|Public Key|
 
 - Checks if self is a valid G2 element.
 
-`verify_public_key_order(verify: bool)`
+`unsafe fn verify_public_key_order(verify: bool)`
 
-- Enables/disables verification of public key order when setting keys:
-  - true: verification enabled;
-  - false: verification disabled (default).
+- Enables or disables the subgroup (order) check during public key deserialization:
+  - `true`: check enabled (default);
+  - `false`: check disabled; deserialization accepts points outside the prime-order subgroup.
+- The setting is process-wide and not synchronised: it affects every thread, and no other thread may call into the crate while it runs.
 
 `serialize(&self) -> Result<Vec<u8>, BlsError>`
 

@@ -7,6 +7,7 @@ This file contains a centralizes a trace of all published crate versions, with t
 - Fixes a segfault when `G1`/`G2` `is_zero` or `is_valid` was the first call in a process: they now initialise the library first.
 - `verify_signature_order` and `verify_public_key_order` now initialise the library first, so a setting made before any other call is no longer silently reset.
 - Panics if the C library fails to initialise, instead of continuing on an uninitialised curve.
+- **Breaking:** `G1::verify_signature_order` and `G2::verify_public_key_order` are now `unsafe fn`. They change a process-wide, unsynchronised setting in the C library; disabling it makes deserialization accept points outside the prime-order subgroup in every thread. Documentation now states the check is enabled by default (it was wrongly described as disabled).
 
 
 ## [multiversx-bls 0.2.1] - 2026-05-27

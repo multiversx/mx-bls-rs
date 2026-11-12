@@ -28,7 +28,7 @@ Result: **176 checks, 0 mismatches.**
 |---|---|---|---|
 | 1 | High | Fixed | Calls into the C library before initialisation segfault in safe Rust |
 | 2 | Medium | Fixed | `blsInit` failure is ignored |
-| 3 | Medium | Open | Order-verification toggles are global, unsynchronised and misdocumented |
+| 3 | Medium | Fixed | Order-verification toggles are global, unsynchronised and misdocumented |
 | 4 | Medium | Open | `build.rs` breaks when the crate is a workspace member in a subdirectory |
 | 5 | Medium | Open | No checked sign/verify API matching Go |
 | 6 | Low | Open | `G2::set_str` ignores errors and leaves a corrupted point |
@@ -63,7 +63,7 @@ Fix: `init_library` now panics with the `blsInit` return code when it is non-zer
 
 Go never disables these checks and additionally checks `IsValidOrder()` explicitly before verifying.
 
-Recommendation: remove the toggles or make them `unsafe` with documented consequences, and fix the README.
+Fix: both toggles are now `unsafe fn` with a `# Safety` section (no other thread may call into the crate while they run), and their docs and the README describe the process-wide effect and the correct default (enabled). `tests/init.rs` checks that a fresh process rejects a non-subgroup signature. No code outside this repository called them. This is a breaking change.
 
 ### 4. `build.rs` link path (Medium)
 
@@ -145,7 +145,7 @@ Only the KOSK aggregation scheme (active on mainnet) can be implemented with thi
 ## Recommended order of work
 
 1. Initialise before every C call, and panic if `blsInit` fails (both done).
-2. Remove or make `unsafe` the order toggles; fix the README default.
+2. Make the order toggles `unsafe` and fix the README default (done).
 3. Fix `build.rs` (`CARGO_MANIFEST_DIR`, `links`).
 4. Add checked sign/verify matching Go.
 5. Correct FFI types, make `set_str` return `Result`, harden `SecretKey`.
