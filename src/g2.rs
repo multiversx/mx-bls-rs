@@ -20,6 +20,14 @@ impl PartialEq for G2 {
 }
 
 impl G2 {
+    /// Returns true if `self` is usable as a public key: not the identity,
+    /// in the prime-order subgroup, and on the curve.
+    ///
+    /// Same as `IsPubKeyPointValid` in mx-chain-crypto-go.
+    pub fn is_valid_point(&self) -> bool {
+        !self.is_zero() && self.is_valid_order() && self.is_valid()
+    }
+
     /// Adds the given `public_key` to `self`.
     ///
     /// This function performs an addition operation on the `G2` element represented by `self`

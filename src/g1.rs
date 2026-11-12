@@ -21,7 +21,57 @@ impl PartialEq for G1 {
 }
 
 impl G1 {
+    /// Returns true if `self` is usable as a signature: not the identity,
+    /// in the prime-order subgroup, and on the curve.
+    ///
+    /// Same as `IsSigValidPoint` in mx-chain-crypto-go.
+    pub fn is_valid_point(&self) -> bool {
+        !self.is_zero() && self.is_valid_order() && self.is_valid()
+    }
+
+    /// Verifies `self` as a signature of `msg` by `public_key`, with the same
+    /// checks as `BlsSingleSigner.Verify` in mx-chain-crypto-go.
+    ///
+    /// Returns false if `msg` is empty, or if `public_key` or `self` is not a
+    /// valid point (see `G2::is_valid_point` and `G1::is_valid_point`).
+    /// Unlike [`G1::verify`], the subgroup checks hold even when order
+    /// verification on deserialization has been disabled.
+    pub fn verify_checked(&self, public_key: &G2, msg: &[u8]) -> bool {
+        !msg.is_empty()
+            && public_key.is_valid_point()
+            && self.is_valid_point()
+            && self.verify(*public_key, msg)
+    }
+
+    /// Verifies `self` as an aggregated signature of `msg` by all
+    /// `public_keys`, with the same checks as
+    /// `BlsMultiSignerKOSK.VerifyAggregatedSig` in mx-chain-crypto-go.
+    ///
+    /// Returns false if `msg` or `public_keys` is empty. Like Go, it does not
+    /// check the points themselves: under the KOSK scheme the public keys must
+    /// already be validated, registered keys.
+    pub fn fast_aggregate_verify_checked(&self, public_keys: &[G2], msg: &[u8]) -> bool {
+        !msg.is_empty() && self.fast_aggregate_verify(public_keys, msg)
+    }
+
+    /// Aggregates `sigs` into one signature, with the same checks as
+    /// `BlsMultiSignerKOSK.AggregateSignatures` in mx-chain-crypto-go.
+    ///
+    /// Returns `BlsError::InvalidData` if `sigs` is empty or any signature is
+    /// not a valid point (see `G1::is_valid_point`).
+    pub fn aggregate_checked(sigs: &[G1]) -> Result<G1, BlsError> {
+        if sigs.is_empty() || !sigs.iter().all(G1::is_valid_point) {
+            return Err(BlsError::InvalidData);
+        }
+
+        let mut aggregated = G1::default();
+        aggregated.aggregate(sigs);
+        Ok(aggregated)
+    }
+
     /// return true if `self` is valid signature of `msg` for `public_key`
+    ///
+    /// No input checks: prefer [`G1::verify_checked`], which matches the node.
     pub fn verify(&self, public_key: G2, msg: &[u8]) -> bool {
         INIT.call_once(init_library);
         unsafe { blsVerify(self, &public_key, msg.as_ptr(), msg.len()) == 1 }
@@ -30,6 +80,8 @@ impl G1 {
     /// return true if `self` is a valid signature of `msg` for `public keys`
     /// * `public_keys` - array of public key
     /// * `msg` - message
+    ///
+    /// Prefer [`G1::fast_aggregate_verify_checked`], which matches the node.
     pub fn fast_aggregate_verify(&self, public_keys: &[G2], msg: &[u8]) -> bool {
         INIT.call_once(init_library);
         if public_keys.is_empty() {

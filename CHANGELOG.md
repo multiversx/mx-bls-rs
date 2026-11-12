@@ -12,6 +12,7 @@ This file contains a centralizes a trace of all published crate versions, with t
 - **Breaking:** declares `links = "bls384_256"`, so Cargo rejects a dependency graph that would link the herumi C symbols twice, including two semver-incompatible versions of this crate.
 - Removes the 32-bit `arm` build targets, which were wrongly linked against the aarch64 archives; they now fail with "Unsupported target".
 - The build script reruns only when `build.rs` or `executors/` changes.
+- Adds checked functions with the same input checks as mx-chain-crypto-go: `G1::is_valid_point`, `G2::is_valid_point`, `SecretKey::sign_checked`, `G1::verify_checked`, `G1::aggregate_checked` and `G1::fast_aggregate_verify_checked`. The raw functions are unchanged.
 
 
 ## [multiversx-bls 0.2.1] - 2026-05-27

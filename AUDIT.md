@@ -30,7 +30,7 @@ Result: **176 checks, 0 mismatches.**
 | 2 | Medium | Fixed | `blsInit` failure is ignored |
 | 3 | Medium | Fixed | Order-verification toggles are global, unsynchronised and misdocumented |
 | 4 | Medium | Fixed | `build.rs` breaks when the crate is a workspace member in a subdirectory |
-| 5 | Medium | Open | No checked sign/verify API matching Go |
+| 5 | Medium | Fixed | No checked sign/verify API matching Go |
 | 6 | Low | Open | `G2::set_str` ignores errors and leaves a corrupted point |
 | 7 | Low | Open | FFI declarations don't match the C header |
 | 8 | Low | Open | Secret-key hygiene |
@@ -87,7 +87,9 @@ The Rust API exposes only the raw calls. `SecretKey::sign` with a zero key retur
 
 Downstream, `mx-sdk-rs/chain/vm/src/crypto_functions_bls.rs` re-implements Go's checks itself and wraps every call in a global `BLS_MUTEX`.
 
-Recommendation: add `verify_strict`/checked `sign` functions that mirror Go, so consumers don't each re-implement them.
+Fix: added `G1::is_valid_point` / `G2::is_valid_point` (Go `IsSigValidPoint` / `IsPubKeyPointValid`), `SecretKey::sign_checked` (`BlsSingleSigner.Sign`), `G1::verify_checked` (`BlsSingleSigner.Verify`), `G1::aggregate_checked` (`BlsMultiSignerKOSK.AggregateSignatures`) and `G1::fast_aggregate_verify_checked` (`BlsMultiSignerKOSK.VerifyAggregatedSig`). Like Go, the KOSK verification does not check the public keys themselves. The raw functions are unchanged, and their docs point to the checked ones. `tests/checked.rs` covers empty messages, the zero key, identity points, and non-subgroup points with the order check switched off. The differential test, extended to the checked functions, gives 272 checks and 0 mismatches against Go.
+
+Downstream, `mx-sdk-rs` can replace its own checks in `crypto_functions_bls.rs` with these functions.
 
 ### 6. `G2::set_str` ignores errors (Low)
 
@@ -147,6 +149,6 @@ Only the KOSK aggregation scheme (active on mainnet) can be implemented with thi
 1. Initialise before every C call, and panic if `blsInit` fails (both done).
 2. Make the order toggles `unsafe` and fix the README default (done).
 3. Fix `build.rs` (`CARGO_MANIFEST_DIR`, `links`) (done).
-4. Add checked sign/verify matching Go.
+4. Add checked sign/verify matching Go (done).
 5. Correct FFI types, make `set_str` return `Result`, harden `SecretKey`.
 6. Commit the Go-generated vectors as tests and run them in CI; upgrade the archives to v1.37.0.
